@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "timeout.h"
 
@@ -37,6 +38,9 @@ queue_create ()
     queue->size = 0;
     queue->head = NULL;
     queue->tail = NULL;
+
+    pthread_mutex_init (&queue->lock, NULL);
+    pthread_create (&queue->thread, NULL, timeout_thread, (void *)queue);
 
     return queue;
 }
@@ -78,6 +82,8 @@ queue_destroy (struct queue *queue)
     while (queue->size > 0)
         queue_delete (queue, queue->head);
 
+    pthread_cancel (queue->thread);
+
     free (queue);
 
     return 0;
@@ -88,10 +94,11 @@ queue_destroy (struct queue *queue)
  * @return -1 on failure, 0 on success
  */
 int
-queue_pop (struct queue *queue, struct queue_element *elem)
+_queue_pop (struct queue *queue, struct queue_element *elem)
 {
     if (queue == NULL || queue->size == 0 || elem == NULL)
         return -1;
+
 
     if (elem == queue->head)
     {
@@ -116,8 +123,17 @@ queue_pop (struct queue *queue, struct queue_element *elem)
     elem->next = NULL;
 
     queue->size--;
-
     return 0;
+}
+
+int
+queue_pop (struct queue *queue, struct queue_element *elem)
+{
+    pthread_mutex_lock (&queue->lock);
+
+    _queue_pop (queue, elem);
+
+    pthread_mutex_unlock (&queue->lock);
 }
 
 /** Queue Delete
@@ -127,8 +143,22 @@ queue_pop (struct queue *queue, struct queue_element *elem)
 int
 queue_delete (struct queue *queue, struct queue_element *elem)
 {
-
     if (queue_pop (queue, elem))
+        return -1;
+
+    if (queue->destroy != NULL)
+        queue->destroy (elem->key);
+
+    free (elem->key);
+    free (elem);
+
+    return 0;
+}
+
+int
+_queue_delete (struct queue *queue, struct queue_element *elem)
+{
+    if (_queue_pop (queue, elem))
         return -1;
 
     if (queue->destroy != NULL)
@@ -149,6 +179,8 @@ queue_insert (struct queue *queue, struct queue_element *elem)
     if (queue == NULL || elem == NULL)
         return -1;
 
+    pthread_mutex_lock (&queue->lock);
+
     if (queue->size == 0)
     {
         queue->head = elem;
@@ -166,6 +198,8 @@ queue_insert (struct queue *queue, struct queue_element *elem)
 
     queue->size++;
     gettimeofday (&elem->time, NULL);
+
+    pthread_mutex_unlock (&queue->lock);
 
     return 0;
 }
@@ -202,6 +236,26 @@ queue_find (struct queue *queue, const void *p_key)
     return NULL;
 }
 
+/** Timeout Thread
+ * @return void *
+ */
+void *
+timeout_thread (void *args)
+{
+    struct queue *queue = (struct queue *)args;
+    struct timespec timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_nsec = 0;
+
+    while (1)
+    {
+        nanosleep(&timeout, NULL);
+        pthread_mutex_lock (&queue->lock);
+        queue_timeout (queue);
+        pthread_mutex_unlock (&queue->lock);
+    }
+}
+
 /** Timeout old elements in the queue 
  * @return number of elements timed out
  */
@@ -220,10 +274,11 @@ queue_timeout (struct queue *queue)
         if (it->time.tv_sec > timeout.tv_sec)
             break;
 
-        queue_delete (queue, it);
+        _queue_delete (queue, it);
         removed++;
     }
 
+    printf ("removed (%d) elements\n", removed);
     return removed;
 }
 

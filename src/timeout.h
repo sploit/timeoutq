@@ -19,10 +19,11 @@
 #define __TIMEOUT_QUEUE_H__
 
 #include <sys/time.h>
+#include <pthread.h>
 
 /** Default Queue Timeout value
  */
-#define QUEUE_TIMEOUT 180
+#define QUEUE_TIMEOUT 10
 
 /** Queue Element
  */
@@ -43,9 +44,17 @@ struct queue
     int timeout;
     int size;
 
+    pthread_t thread;
+    pthread_mutex_t lock;
+
     int (*compare) (const void *p1, const void *p2);
     int (*destroy) (const void *p);
 };
+
+/** Timer routine
+ * @return void *
+ */
+extern void *timeout_thread (void *args);
 
 /** Create a new queue 
  */
