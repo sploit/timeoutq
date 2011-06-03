@@ -48,12 +48,10 @@ int main (int argc, char *argv[])
 
     /* XXX this is evil, need to check semaphores before setting
      * destructor to avoid potential race conditions.
-     *
-     * Ideas:
-     *  Split 'queue_create ()' into 'queue_create ()' and 
-     *  'queue_start ()', utilize start to init the expiration thread.
      */
     queue->destroy = destroy;
+
+    queue_start (queue);
 
     /* Insert 9000 elements into the queue, space every thousand
      * or so 15 seconds apart so that timeout thread will be forced
@@ -70,6 +68,8 @@ int main (int argc, char *argv[])
     /* the timeout thread will ensure that we eventually 
      * remove all the elements from the queue */
     while (queue->size > 0);
+
+    queue_stop (queue);
 
     /* when finished be sure to call destroy as it free's
      * memory and presumably kills the timeout thread. */

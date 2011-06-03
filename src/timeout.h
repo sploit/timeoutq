@@ -60,6 +60,14 @@ extern void *timeout_thread (void *args);
  */
 extern struct queue *queue_create ();
 
+/** Start the expiration thread for the queue
+ */
+int queue_start (struct queue *queue);
+
+/** Stop the expiration thread fro the queue
+ */
+int queue_stop (struct queue *queue);
+
 /** Create a new queue element
  */
 extern struct queue_element *queue_element_create (const void *p_key,

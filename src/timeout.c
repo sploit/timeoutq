@@ -40,9 +40,32 @@ queue_create ()
     queue->tail = NULL;
 
     pthread_mutex_init (&queue->lock, NULL);
-    pthread_create (&queue->thread, NULL, timeout_thread, (void *)queue);
 
     return queue;
+}
+
+/** Queue Start
+ * @return 0 on success, -1 on failure
+ */
+int
+queue_start (struct queue *queue)
+{
+    if (pthread_create (&queue->thread, NULL, timeout_thread, (void *)queue))
+        return -1;
+
+    return 0;
+}
+
+/** Queue Stop
+ * @return 0 on success, -1 on failure
+ */
+int
+queue_stop (struct queue *queue)
+{
+    if (pthread_cancel (queue->thread))
+        return -1;
+
+    return 0;
 }
 
 /** Queue Element Create
@@ -82,8 +105,6 @@ queue_destroy (struct queue *queue)
     while (queue->size > 0)
         queue_delete (queue, queue->head);
 
-    pthread_cancel (queue->thread);
-
     free (queue);
 
     return 0;
@@ -94,7 +115,7 @@ queue_destroy (struct queue *queue)
  * @return -1 on failure, 0 on success
  */
 int
-_queue_pop (struct queue *queue, struct queue_element *elem)
+queue_pop (struct queue *queue, struct queue_element *elem)
 {
     if (queue == NULL || queue->size == 0 || elem == NULL)
         return -1;
@@ -126,16 +147,6 @@ _queue_pop (struct queue *queue, struct queue_element *elem)
     return 0;
 }
 
-int
-queue_pop (struct queue *queue, struct queue_element *elem)
-{
-    pthread_mutex_lock (&queue->lock);
-
-    _queue_pop (queue, elem);
-
-    pthread_mutex_unlock (&queue->lock);
-}
-
 /** Queue Delete
  * Delete an element from the list
  * @return -1 on failure, 0 on success
@@ -144,21 +155,6 @@ int
 queue_delete (struct queue *queue, struct queue_element *elem)
 {
     if (queue_pop (queue, elem))
-        return -1;
-
-    if (queue->destroy != NULL)
-        queue->destroy (elem->key);
-
-    free (elem->key);
-    free (elem);
-
-    return 0;
-}
-
-int
-_queue_delete (struct queue *queue, struct queue_element *elem)
-{
-    if (_queue_pop (queue, elem))
         return -1;
 
     if (queue->destroy != NULL)
@@ -244,15 +240,13 @@ timeout_thread (void *args)
 {
     struct queue *queue = (struct queue *)args;
     struct timespec timeout;
-    timeout.tv_sec = 5;
+    timeout.tv_sec = 1;
     timeout.tv_nsec = 0;
 
     while (1)
     {
         nanosleep(&timeout, NULL);
-        pthread_mutex_lock (&queue->lock);
         queue_timeout (queue);
-        pthread_mutex_unlock (&queue->lock);
     }
 }
 
@@ -274,7 +268,7 @@ queue_timeout (struct queue *queue)
         if (it->time.tv_sec > timeout.tv_sec)
             break;
 
-        _queue_delete (queue, it);
+        queue_delete (queue, it);
         removed++;
     }
 
