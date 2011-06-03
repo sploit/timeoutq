@@ -1,0 +1,27 @@
+Timeout Queue
+
+Tiny bit of code to expire elements after a given time.
+
+
+Call chain:
+
+/* Create a new queue */
+queue_create ();
+
+/* Create a new element */
+queue_element_create ();
+
+/* Add new element to the queue */
+queue_insert ();
+
+/* find an element that was already inserted */
+queue_find ();
+
+/* reset the timer for an element */
+queue_bump ();
+
+/* premptively delete an element from the queue */
+queue_delete ();
+
+/* timeout the expired elements */
+queue_timeout ();

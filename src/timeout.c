@@ -21,7 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "queue.h"
+#include "timeout.h"
 
 /** Queue Create
  * @return pointer to new queue

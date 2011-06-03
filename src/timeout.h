@@ -57,6 +57,12 @@ extern struct queue_element *queue_element_create (const void *p_key,
                                                    unsigned int i_key_size);
 
 /** Destroy a queue 
+ *
+ * XXX: this will queue->destroy all of your elements, meaning if your
+ * destroyer function removes the element from a hash table it will remove
+ * all of them.
+ *
+ * TODO: Fix the above
  */
 extern int queue_destroy (struct queue *queue);
 
