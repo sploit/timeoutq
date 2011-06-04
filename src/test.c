@@ -43,7 +43,7 @@ int main (int argc, char *argv[])
     struct queue_element *elem;
     int key;
     struct timespec time;
-    time.tv_sec = 15;
+    time.tv_sec = 3;
     time.tv_nsec = 0;
 
     /* XXX this is evil, need to check semaphores before setting
@@ -51,12 +51,13 @@ int main (int argc, char *argv[])
      */
     queue->destroy = destroy;
 
-    queue_start (queue);
+    if (queue_start (queue))
+        return -1;
 
     /* Insert 9000 elements into the queue, space every thousand
      * or so 15 seconds apart so that timeout thread will be forced
      * to dump several times */
-    for (key = 0; key < 9000; key++)
+    for (key = 0; key < 3000; key++)
     {
         if ((key % 1000) == 0)
             nanosleep (&time, NULL);
@@ -69,7 +70,8 @@ int main (int argc, char *argv[])
      * remove all the elements from the queue */
     while (queue->size > 0);
 
-    queue_stop (queue);
+    if (queue_stop (queue))
+        return -1;
 
     /* when finished be sure to call destroy as it free's
      * memory and presumably kills the timeout thread. */

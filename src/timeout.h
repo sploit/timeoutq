@@ -23,7 +23,20 @@
 
 /** Default Queue Timeout value
  */
-#define QUEUE_TIMEOUT 10
+#define QUEUE_TIMEOUT 3
+
+/** Expire interval 
+ * how often to check for expired elements
+ */
+#define EXPIRE_INTERVAL 1
+
+/** State of the queue
+ */
+typedef enum
+{
+    QUEUE_STOPPED,
+    QUEUE_STARTED
+} QUEUE_STATE;
 
 /** Queue Element
  */
@@ -46,13 +59,13 @@ struct queue
 
     pthread_t thread;
     pthread_mutex_t lock;
+    QUEUE_STATE state;
 
     int (*compare) (const void *p1, const void *p2);
     int (*destroy) (const void *p);
 };
 
 /** Timer routine
- * @return void *
  */
 extern void *timeout_thread (void *args);
 
@@ -74,12 +87,6 @@ extern struct queue_element *queue_element_create (const void *p_key,
                                                    unsigned int i_key_size);
 
 /** Destroy a queue 
- *
- * XXX: this will queue->destroy all of your elements, meaning if your
- * destroyer function removes the element from a hash table it will remove
- * all of them.
- *
- * TODO: Fix the above
  */
 extern int queue_destroy (struct queue *queue);
 
@@ -107,13 +114,5 @@ extern struct queue_element *queue_find (struct queue *queue,
 /** Timeout old elements in the queue
  */
 extern int queue_timeout (struct queue *queue);
-
-/** Dump queue element to screen
- */
-extern void queue_element_print (struct queue_element *elem);
-
-/** Dump queue to screen
- */
-extern void queue_print (struct queue *queue);
 
 #endif /* __TIMEOUT_QUEUE_H__ */

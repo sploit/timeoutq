@@ -41,6 +41,8 @@ queue_create ()
 
     pthread_mutex_init (&queue->lock, NULL);
 
+    queue->state = QUEUE_STOPPED;
+
     return queue;
 }
 
@@ -50,8 +52,13 @@ queue_create ()
 int
 queue_start (struct queue *queue)
 {
+    if (queue->state != QUEUE_STOPPED)
+        return -1;
+
     if (pthread_create (&queue->thread, NULL, timeout_thread, (void *)queue))
         return -1;
+
+    queue->state = QUEUE_STARTED;
 
     return 0;
 }
@@ -62,8 +69,17 @@ queue_start (struct queue *queue)
 int
 queue_stop (struct queue *queue)
 {
+    if (queue->state != QUEUE_STARTED)
+        return -1;
+
+    queue->state = QUEUE_STOPPED;
+
     if (pthread_cancel (queue->thread))
         return -1;
+/*
+    if (pthread_join (queue->thread, NULL))
+        return -1;
+*/
 
     return 0;
 }
@@ -100,6 +116,9 @@ int
 queue_destroy (struct queue *queue)
 {
     if (queue == NULL)
+        return -1;
+
+    if (queue->state == QUEUE_STARTED)
         return -1;
 
     while (queue->size > 0)
@@ -154,6 +173,9 @@ queue_pop (struct queue *queue, struct queue_element *elem)
 int
 queue_delete (struct queue *queue, struct queue_element *elem)
 {
+    if (queue == NULL || elem == NULL || elem->key == NULL)
+        return -1;
+
     if (queue_pop (queue, elem))
         return -1;
 
@@ -240,14 +262,17 @@ timeout_thread (void *args)
 {
     struct queue *queue = (struct queue *)args;
     struct timespec timeout;
-    timeout.tv_sec = 1;
+    timeout.tv_sec = EXPIRE_INTERVAL;
     timeout.tv_nsec = 0;
 
+/*    while (queue->state == QUEUE_STARTED)*/
     while (1)
     {
         nanosleep(&timeout, NULL);
         queue_timeout (queue);
     }
+
+    return (void *)0;
 }
 
 /** Timeout old elements in the queue 
@@ -272,39 +297,6 @@ queue_timeout (struct queue *queue)
         removed++;
     }
 
-    printf ("removed (%d) elements\n", removed);
+    printf ("Removed (%d) elements\n", removed);
     return removed;
-}
-
-/** Print a given element
- * @return void
- */
-void
-queue_element_print (struct queue_element *elem)
-{
-    char s[50];
-    strftime (s, sizeof (s), "%b %e, %Y %T",
-              localtime ((const time_t *) &elem->time));
-
-    printf ("    prev: %p\n", elem->prev);
-    printf ("    next: %p\n", elem->next);
-    printf ("    time: %s\n", s);
-    printf ("     key: %p\n", elem->key);
-}
-
-/** Print all the elements in the queue 
- * @return void
- */
-void
-queue_print (struct queue *queue)
-{
-    struct queue_element *it;
-
-    printf ("===================================================\n");
-    printf ("Queue Size: %d\n", queue->size);
-    printf ("Queue head: %p\n", queue->head);
-    printf ("Queue tail: %p\n\n", queue->tail);
-
-    for (it = queue->head; it; it = it->next)
-        queue_element_print (it);
 }
