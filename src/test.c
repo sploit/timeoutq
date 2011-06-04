@@ -46,17 +46,10 @@ int main (int argc, char *argv[])
     time.tv_sec = 3;
     time.tv_nsec = 0;
 
-    /* XXX this is evil, need to check semaphores before setting
-     * destructor to avoid potential race conditions.
-     */
     queue->destroy = destroy;
 
-    if (queue_start (queue))
-        return -1;
+    queue_start (queue);
 
-    /* Insert 9000 elements into the queue, space every thousand
-     * or so 15 seconds apart so that timeout thread will be forced
-     * to dump several times */
     for (key = 0; key < 3000; key++)
     {
         if ((key % 1000) == 0)
@@ -70,8 +63,7 @@ int main (int argc, char *argv[])
      * remove all the elements from the queue */
     while (queue->size > 0);
 
-    if (queue_stop (queue))
-        return -1;
+    queue_stop (queue);
 
     /* when finished be sure to call destroy as it free's
      * memory and presumably kills the timeout thread. */

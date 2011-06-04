@@ -179,9 +179,6 @@ queue_delete (struct queue *queue, struct queue_element *elem)
     if (queue_pop (queue, elem))
         return -1;
 
-    if (queue->destroy != NULL)
-        queue->destroy (elem->key);
-
     free (elem->key);
     free (elem);
 
@@ -254,27 +251,6 @@ queue_find (struct queue *queue, const void *p_key)
     return NULL;
 }
 
-/** Timeout Thread
- * @return void *
- */
-void *
-timeout_thread (void *args)
-{
-    struct queue *queue = (struct queue *)args;
-    struct timespec timeout;
-    timeout.tv_sec = EXPIRE_INTERVAL;
-    timeout.tv_nsec = 0;
-
-/*    while (queue->state == QUEUE_STARTED)*/
-    while (1)
-    {
-        nanosleep(&timeout, NULL);
-        queue_timeout (queue);
-    }
-
-    return (void *)0;
-}
-
 /** Timeout old elements in the queue 
  * @return number of elements timed out
  */
@@ -293,10 +269,36 @@ queue_timeout (struct queue *queue)
         if (it->time.tv_sec > timeout.tv_sec)
             break;
 
+        if (queue->destroy != NULL)
+            queue->destroy (it->key);
+
         queue_delete (queue, it);
         removed++;
     }
 
     printf ("Removed (%d) elements\n", removed);
     return removed;
+}
+
+/** Timeout Thread
+ * @return void *
+ */
+void *
+timeout_thread (void *args)
+{
+    struct queue *queue = (struct queue *)args;
+    struct timespec timeout;
+    timeout.tv_sec = EXPIRE_INTERVAL;
+    timeout.tv_nsec = 0;
+
+    pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype (PTHREAD_CANCEL_DEFERRED, NULL);
+
+    while (1)
+    {
+        nanosleep(&timeout, NULL);
+        queue_timeout (queue);
+    }
+
+    return (void *)0;
 }
