@@ -22,75 +22,75 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "timeout.h"
+#include "schedule.h"
 
-/** Queue Create
- * @return pointer to new queue
+/** Schedule Queue Create
+ * @return pointer to new sched
  */
-struct queue *
-queue_create ()
+struct sched *
+sched_create ()
 {
-    struct queue *queue;
+    struct sched *sched;
 
-    if ((queue = malloc (sizeof (*queue))) == NULL)
+    if ((sched = malloc (sizeof (*sched))) == NULL)
         return NULL;
 
-    queue->size = 0;
-    queue->head = NULL;
-    queue->tail = NULL;
+    sched->size = 0;
+    sched->head = NULL;
+    sched->tail = NULL;
 
-    pthread_mutex_init (&queue->lock, NULL);
+    pthread_mutex_init (&sched->lock, NULL);
 
-    queue->state = QUEUE_STOPPED;
+    sched->state = SCHEDULER_STOPPED;
 
-    return queue;
+    return sched;
 }
 
-/** Queue Start
+/** Schedule Queue Start
  * @return 0 on success, -1 on failure
  */
 int
-queue_start (struct queue *queue)
+sched_start (struct sched *sched)
 {
-    if (queue->state != QUEUE_STOPPED)
+    if (sched->state != SCHEDULER_STOPPED)
         return -1;
 
-    if (pthread_create (&queue->thread, NULL, timeout_thread, (void *)queue))
+    if (pthread_create (&sched->thread, NULL, schedule_runner, (void *)sched))
         return -1;
 
-    queue->state = QUEUE_STARTED;
+    sched->state = SCHEDULER_STARTED;
 
     return 0;
 }
 
-/** Queue Stop
+/** Schedule Queue Stop
  * @return 0 on success, -1 on failure
  */
 int
-queue_stop (struct queue *queue)
+sched_stop (struct sched *sched)
 {
-    if (queue->state != QUEUE_STARTED)
+    if (sched->state != SCHEDULER_STARTED)
         return -1;
 
-    queue->state = QUEUE_STOPPED;
+    sched->state = SCHEDULER_STOPPED;
 
-    if (pthread_cancel (queue->thread))
+    if (pthread_cancel (sched->thread))
         return -1;
 /*
-    if (pthread_join (queue->thread, NULL))
+    if (pthread_join (sched->thread, NULL))
         return -1;
 */
 
     return 0;
 }
 
-/** Queue Element Create
- * @return pointer to a new queue element
+/** Schedule Queue Element Create
+ * @return pointer to a new sched element
  */
-struct queue_element *
-queue_element_create (const void *p_key, unsigned int i_key_size)
+struct sched_element *
+sched_element_create (const void *p_key, unsigned int i_key_size)
 {
-    struct queue_element *elem;
+    struct sched_element *elem;
 
     if ((elem = malloc (sizeof (*elem))) == NULL)
         return NULL;
@@ -109,52 +109,52 @@ queue_element_create (const void *p_key, unsigned int i_key_size)
     return elem;
 }
 
-/** Queue Destroy
+/** Schedule Queue Destroy
  * @return -1 on failure, 0 on success
  */
 int
-queue_destroy (struct queue *queue)
+sched_destroy (struct sched *sched)
 {
-    if (queue == NULL)
+    if (sched == NULL)
         return -1;
 
-    if (queue->state == QUEUE_STARTED)
+    if (sched->state == SCHEDULER_STARTED)
         return -1;
 
-    while (queue->size > 0)
-        queue_delete (queue, queue->head);
+    while (sched->size > 0)
+        sched_delete (sched, sched->head);
 
-    free (queue);
+    free (sched);
 
     return 0;
 }
 
-/** Queue Pop
+/** Schedule Queue Pop
  * Remove the element from the list
  * @return -1 on failure, 0 on success
  */
 int
-queue_pop (struct queue *queue, struct queue_element *elem)
+sched_pop (struct sched *sched, struct sched_element *elem)
 {
-    if (queue == NULL || queue->size == 0 || elem == NULL)
+    if (sched == NULL || sched->size == 0 || elem == NULL)
         return -1;
 
 
-    if (elem == queue->head)
+    if (elem == sched->head)
     {
-        queue->head = elem->next;
+        sched->head = elem->next;
 
-        if (queue->head == NULL)
-            queue->tail = NULL;
+        if (sched->head == NULL)
+            sched->tail = NULL;
         else
-            queue->head->prev = NULL;
+            sched->head->prev = NULL;
     }
     else
     {
         elem->prev->next = elem->next;
 
         if (elem->next == NULL)
-            queue->tail = elem->prev;
+            sched->tail = elem->prev;
         else
             elem->next->prev = elem->prev;
     }
@@ -162,21 +162,21 @@ queue_pop (struct queue *queue, struct queue_element *elem)
     elem->prev = NULL;
     elem->next = NULL;
 
-    queue->size--;
+    sched->size--;
     return 0;
 }
 
-/** Queue Delete
+/** Schedule Queue Delete
  * Delete an element from the list
  * @return -1 on failure, 0 on success
  */
 int
-queue_delete (struct queue *queue, struct queue_element *elem)
+sched_delete (struct sched *sched, struct sched_element *elem)
 {
-    if (queue == NULL || elem == NULL || elem->key == NULL)
+    if (sched == NULL || elem == NULL || elem->key == NULL)
         return -1;
 
-    if (queue_pop (queue, elem))
+    if (sched_pop (sched, elem))
         return -1;
 
     free (elem->key);
@@ -185,94 +185,94 @@ queue_delete (struct queue *queue, struct queue_element *elem)
     return 0;
 }
 
-/** Queue Element Insert
+/** Schedule Queue Element Insert
  * @return -1 on failure, 0 on success
  */
 int
-queue_insert (struct queue *queue, struct queue_element *elem)
+sched_insert (struct sched *sched, struct sched_element *elem)
 {
-    if (queue == NULL || elem == NULL)
+    if (sched == NULL || elem == NULL)
         return -1;
 
-    pthread_mutex_lock (&queue->lock);
+    pthread_mutex_lock (&sched->lock);
 
-    if (queue->size == 0)
+    if (sched->size == 0)
     {
-        queue->head = elem;
-        queue->tail = elem;
-        queue->head->prev = NULL;
-        queue->head->next = NULL;
+        sched->head = elem;
+        sched->tail = elem;
+        sched->head->prev = NULL;
+        sched->head->next = NULL;
     }
     else
     {
         elem->next = NULL;
-        elem->prev = queue->tail;
-        queue->tail->next = elem;
-        queue->tail = elem;
+        elem->prev = sched->tail;
+        sched->tail->next = elem;
+        sched->tail = elem;
     }
 
-    queue->size++;
+    sched->size++;
     gettimeofday (&elem->time, NULL);
 
-    pthread_mutex_unlock (&queue->lock);
+    pthread_mutex_unlock (&sched->lock);
 
     return 0;
 }
 
-/** Update the atime on the element and bump it up the queue
+/** Update the atime on the element and bump it up the sched
  * @return -1 on failure, 0 on success 
  */
 int
-queue_bump (struct queue *queue, struct queue_element *elem)
+sched_bump (struct sched *sched, struct sched_element *elem)
 {
-    if (queue == NULL || elem == NULL)
+    if (sched == NULL || elem == NULL)
         return -1;
 
-    if (queue_pop (queue, elem))
+    if (sched_pop (sched, elem))
         return -1;
 
-    queue_insert (queue, elem);
+    sched_insert (sched, elem);
 
     return 0;
 }
 
-/** Queue Find
+/** Schedule Queue Find
  * @return pointer to matching element
  */
-struct queue_element *
-queue_find (struct queue *queue, const void *p_key)
+struct sched_element *
+sched_find (struct sched *sched, const void *p_key)
 {
-    struct queue_element *it;
+    struct sched_element *it;
 
-    for (it = queue->head; it; it = it->next)
-        if (queue->compare (p_key, it->key) == 0)
+    for (it = sched->head; it; it = it->next)
+        if (sched->compare (p_key, it->key) == 0)
             return it;
 
     return NULL;
 }
 
-/** Timeout old elements in the queue 
+/** Timeout old elements in the sched 
  * @return number of elements timed out
  */
 int
-queue_timeout (struct queue *queue)
+sched_timeout (struct sched *sched)
 {
-    struct queue_element *it;
+    struct sched_element *it;
     struct timeval timeout;
     int removed = 0;
 
     gettimeofday (&timeout, NULL);
-    timeout.tv_sec -= QUEUE_TIMEOUT;
+    timeout.tv_sec -= SCHEDULER_TIMEOUT;
 
-    for (it = queue->tail; it; it = queue->tail)
+    for (it = sched->tail; it; it = sched->tail)
     {
         if (it->time.tv_sec > timeout.tv_sec)
             break;
 
-        if (queue->destroy != NULL)
-            queue->destroy (it->key);
+        if (sched->task != NULL)
+            sched->task (it->key);
 
-        queue_delete (queue, it);
+        sched_delete (sched, it);
         removed++;
     }
 
@@ -284,9 +284,9 @@ queue_timeout (struct queue *queue)
  * @return void *
  */
 void *
-timeout_thread (void *args)
+schedule_runner (void *args)
 {
-    struct queue *queue = (struct queue *)args;
+    struct sched *sched = (struct sched *)args;
     struct timespec timeout;
     timeout.tv_sec = EXPIRE_INTERVAL;
     timeout.tv_nsec = 0;
@@ -297,7 +297,7 @@ timeout_thread (void *args)
     while (1)
     {
         nanosleep(&timeout, NULL);
-        queue_timeout (queue);
+        sched_timeout (sched);
     }
 
     return (void *)0;

@@ -1,27 +1,30 @@
-Timeout Queue
+Schedule Queue
 
-Tiny bit of code to expire elements after a given time.
+Preform a set task against a set of data elements after a given timeout
+has been reached.
 
+My use case is for preforming garbage collection of stale elements from
+hash table.
 
 Call chain:
 
-/* Create a new queue */
-queue_create ();
+/* Create a new sched */
+sched_create ();
 
 /* Create a new element */
-queue_element_create ();
+sched_element_create ();
 
-/* Add new element to the queue */
-queue_insert ();
+/* Add new element to the sched */
+sched_insert ();
 
 /* find an element that was already inserted */
-queue_find ();
+sched_find ();
 
 /* reset the timer for an element */
-queue_bump ();
+sched_bump ();
 
-/* premptively delete an element from the queue */
-queue_delete ();
+/* premptively delete an element from the sched */
+sched_delete ();
 
 /* timeout the expired elements */
-queue_timeout ();
+sched_timeout ();

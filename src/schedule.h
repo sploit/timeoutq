@@ -15,104 +15,104 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *****************************************************************************/
-#ifndef __TIMEOUT_QUEUE_H__
-#define __TIMEOUT_QUEUE_H__
+#ifndef __TIMEOUT_SCHEDULER_H__
+#define __TIMEOUT_SCHEDULER_H__
 
 #include <sys/time.h>
 #include <pthread.h>
 
 /** Default Queue Timeout value
  */
-#define QUEUE_TIMEOUT 3
+#define SCHEDULER_TIMEOUT 3
 
 /** Expire interval 
  * how often to check for expired elements
  */
 #define EXPIRE_INTERVAL 1
 
-/** State of the queue
+/** State of the sched
  */
 typedef enum
 {
-    QUEUE_STOPPED,
-    QUEUE_STARTED
-} QUEUE_STATE;
+    SCHEDULER_STOPPED,
+    SCHEDULER_STARTED
+} SCHEDULER_STATE;
 
-/** Queue Element
+/** Schedule Queue Element
  */
-struct queue_element
+struct sched_element
 {
-    struct queue_element *prev;
-    struct queue_element *next;
+    struct sched_element *prev;
+    struct sched_element *next;
     struct timeval time;        // access time
     void *key;
 };
 
-/** Queue Structure
+/** Schedule Queue Structure
  */
-struct queue
+struct sched
 {
-    struct queue_element *head;
-    struct queue_element *tail;
+    struct sched_element *head;
+    struct sched_element *tail;
     int timeout;
     int size;
 
     pthread_t thread;
     pthread_mutex_t lock;
-    QUEUE_STATE state;
+    SCHEDULER_STATE state;
 
     int (*compare) (const void *p1, const void *p2);
-    int (*destroy) (const void *p);
+    int (*task) (const void *p);
 };
 
 /** Timer routine
  */
-extern void *timeout_thread (void *args);
+extern void *schedule_runner (void *args);
 
-/** Create a new queue 
+/** Create a new sched 
  */
-extern struct queue *queue_create ();
+extern struct sched *sched_create ();
 
-/** Start the expiration thread for the queue
+/** Start the expiration thread for the sched
  */
-int queue_start (struct queue *queue);
+int sched_start (struct sched *sched);
 
-/** Stop the expiration thread fro the queue
+/** Stop the expiration thread fro the sched
  */
-int queue_stop (struct queue *queue);
+int sched_stop (struct sched *sched);
 
-/** Create a new queue element
+/** Create a new sched element
  */
-extern struct queue_element *queue_element_create (const void *p_key,
+extern struct sched_element *sched_element_create (const void *p_key,
                                                    unsigned int i_key_size);
 
-/** Destroy a queue 
+/** Destroy a sched 
  */
-extern int queue_destroy (struct queue *queue);
+extern int sched_destroy (struct sched *sched);
 
-/** Pop an element out of the queue
+/** Pop an element out of the sched
  */
-extern int queue_pop (struct queue *queue, struct queue_element *elem);
+extern int sched_pop (struct sched *sched, struct sched_element *elem);
 
-/** Delete an element from the queue
+/** Delete an element from the sched
  */
-extern int queue_delete (struct queue *queue, struct queue_element *elem);
+extern int sched_delete (struct sched *sched, struct sched_element *elem);
 
-/** Insert an element into the queue
+/** Insert an element into the sched
  */
-extern int queue_insert (struct queue *queue, struct queue_element *elem);
+extern int sched_insert (struct sched *sched, struct sched_element *elem);
 
-/** Push element to top of queue and update access time
+/** Push element to top of sched and update access time
  */
-extern int queue_bump (struct queue *queue, struct queue_element *elem);
+extern int sched_bump (struct sched *sched, struct sched_element *elem);
 
 /** Find an element that matches the data
  */
-extern struct queue_element *queue_find (struct queue *queue,
+extern struct sched_element *sched_find (struct sched *sched,
                                          const void *p_key);
 
-/** Timeout old elements in the queue
+/** Timeout old elements in the sched
  */
-extern int queue_timeout (struct queue *queue);
+extern int sched_timeout (struct sched *sched);
 
-#endif /* __TIMEOUT_QUEUE_H__ */
+#endif /* __TIMEOUT_SCHEDULER_H__ */
