@@ -35,7 +35,23 @@
  */
 #include "schedule.h"
 
-int task () { return 0; };
+int task (const void *data) 
+{
+    return 0;
+};
+
+int compare (const void *p1, const void *p2)
+{
+    int *val1, *val2;
+
+    val1 = (int *)p1;
+    val2 = (int *)p2;
+
+    if (*val1 == *val2)
+        return 1;
+
+    return 0;
+}
 
 int main (int argc, char *argv[])
 {
@@ -48,10 +64,9 @@ int main (int argc, char *argv[])
     time.tv_sec = 3;
     time.tv_nsec = 0;
 
-    /* Set the destroyer
-     * TODO rename destroy to timeout_callback or something as it is the
-     * action that will be taken once an element has expired */
+    /* Set the function pointers */
     sched->task = task;
+    sched->compare = compare;
 
     /* Start the expiration thread */
     sched_start (sched);
