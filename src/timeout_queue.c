@@ -136,9 +136,9 @@ tmq_destroy (struct tmq *tmq)
 int
 tmq_pop (struct tmq *tmq, struct tmq_element *elem)
 {
+    pthread_mutex_lock (&tmq->lock);
     if (tmq == NULL || tmq->size == 0 || elem == NULL)
         return -1;
-
 
     if (elem == tmq->head)
     {
@@ -163,6 +163,7 @@ tmq_pop (struct tmq *tmq, struct tmq_element *elem)
     elem->next = NULL;
 
     tmq->size--;
+    pthread_mutex_unlock (&tmq->lock);
     return 0;
 }
 
@@ -205,10 +206,10 @@ tmq_insert (struct tmq *tmq, struct tmq_element *elem)
     }
     else
     {
-        elem->next = NULL;
-        elem->prev = tmq->tail;
-        tmq->tail->next = elem;
-        tmq->tail = elem;
+        elem->next = tmq->head;
+        elem->prev = NULL;
+        tmq->head->prev = elem;
+        tmq->head = elem;
     }
 
     tmq->size++;
