@@ -21,16 +21,16 @@
 #include <sys/time.h>
 #include <pthread.h>
 
-/** Default Queue Timeout value
+/** Default Queue Time value
  */
-#define SCHEDULER_TIMEOUT 3
+#define DEFAULT_TIME 180
 
-/** Expire interval 
+/** Schedule check interval 
  * how often to check for expired elements
  */
-#define EXPIRE_INTERVAL 1
+#define SCHEDULE_INTERVAL 1
 
-/** State of the sched
+/** State of the tmq
  */
 typedef enum
 {
@@ -40,21 +40,21 @@ typedef enum
 
 /** Schedule Queue Element
  */
-struct sched_element
+struct tmq_element
 {
-    struct sched_element *prev;
-    struct sched_element *next;
-    struct timeval time;        // access time
+    struct tmq_element *prev;
+    struct tmq_element *next;
+    struct timeval time;        /* access time */
     void *key;
 };
 
 /** Schedule Queue Structure
  */
-struct sched
+struct tmq
 {
-    struct sched_element *head;
-    struct sched_element *tail;
-    int timeout;
+    struct tmq_element *head;
+    struct tmq_element *tail;
+    int tmq;
     int size;
 
     pthread_t thread;
@@ -67,52 +67,52 @@ struct sched
 
 /** Timer routine
  */
-extern void *schedule_runner (void *args);
+extern void *tmq_thread (void *args);
 
-/** Create a new sched 
+/** Create a new tmq 
  */
-extern struct sched *sched_create ();
+extern struct tmq *tmq_create ();
 
-/** Start the expiration thread for the sched
+/** Start the expiration thread for the tmq
  */
-int sched_start (struct sched *sched);
+int tmq_start (struct tmq *tmq);
 
-/** Stop the expiration thread fro the sched
+/** Stop the expiration thread fro the tmq
  */
-int sched_stop (struct sched *sched);
+int tmq_stop (struct tmq *tmq);
 
-/** Create a new sched element
+/** Create a new tmq element
  */
-extern struct sched_element *sched_element_create (const void *p_key,
+extern struct tmq_element *tmq_element_create (const void *p_key,
                                                    unsigned int i_key_size);
 
-/** Destroy a sched 
+/** Destroy a tmq 
  */
-extern int sched_destroy (struct sched *sched);
+extern int tmq_destroy (struct tmq *tmq);
 
-/** Pop an element out of the sched
+/** Pop an element out of the tmq
  */
-extern int sched_pop (struct sched *sched, struct sched_element *elem);
+extern int tmq_pop (struct tmq *tmq, struct tmq_element *elem);
 
-/** Delete an element from the sched
+/** Delete an element from the tmq
  */
-extern int sched_delete (struct sched *sched, struct sched_element *elem);
+extern int tmq_delete (struct tmq *tmq, struct tmq_element *elem);
 
-/** Insert an element into the sched
+/** Insert an element into the tmq
  */
-extern int sched_insert (struct sched *sched, struct sched_element *elem);
+extern int tmq_insert (struct tmq *tmq, struct tmq_element *elem);
 
-/** Push element to top of sched and update access time
+/** Push element to top of tmq and update access time
  */
-extern int sched_bump (struct sched *sched, struct sched_element *elem);
+extern int tmq_bump (struct tmq *tmq, struct tmq_element *elem);
 
 /** Find an element that matches the data
  */
-extern struct sched_element *sched_find (struct sched *sched,
+extern struct tmq_element *tmq_find (struct tmq *tmq,
                                          const void *p_key);
 
-/** Timeout old elements in the sched
+/** Timeout old elements in the tmq
  */
-extern int sched_timeout (struct sched *sched);
+extern int tmq_timeout (struct tmq *tmq);
 
 #endif /* __TIMEOUT_SCHEDULER_H__ */

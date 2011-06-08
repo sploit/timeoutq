@@ -22,43 +22,43 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "schedule.h"
+#include "timeout_queue.h"
 
 /** Schedule Queue Create
- * @return pointer to new sched
+ * @return pointer to new tmq
  */
-struct sched *
-sched_create ()
+struct tmq *
+tmq_create ()
 {
-    struct sched *sched;
+    struct tmq *tmq;
 
-    if ((sched = malloc (sizeof (*sched))) == NULL)
+    if ((tmq = malloc (sizeof (*tmq))) == NULL)
         return NULL;
 
-    sched->size = 0;
-    sched->head = NULL;
-    sched->tail = NULL;
+    tmq->size = 0;
+    tmq->head = NULL;
+    tmq->tail = NULL;
 
-    pthread_mutex_init (&sched->lock, NULL);
+    pthread_mutex_init (&tmq->lock, NULL);
 
-    sched->state = SCHEDULER_STOPPED;
+    tmq->state = SCHEDULER_STOPPED;
 
-    return sched;
+    return tmq;
 }
 
-/** Schedule Queue Start
+/** Start the clock 
  * @return 0 on success, -1 on failure
  */
 int
-sched_start (struct sched *sched)
+tmq_start (struct tmq *tmq)
 {
-    if (sched->state != SCHEDULER_STOPPED)
+    if (tmq->state != SCHEDULER_STOPPED)
         return -1;
 
-    if (pthread_create (&sched->thread, NULL, schedule_runner, (void *)sched))
+    if (pthread_create (&tmq->thread, NULL, tmq_thread, (void *)tmq))
         return -1;
 
-    sched->state = SCHEDULER_STARTED;
+    tmq->state = SCHEDULER_STARTED;
 
     return 0;
 }
@@ -67,17 +67,17 @@ sched_start (struct sched *sched)
  * @return 0 on success, -1 on failure
  */
 int
-sched_stop (struct sched *sched)
+tmq_stop (struct tmq *tmq)
 {
-    if (sched->state != SCHEDULER_STARTED)
+    if (tmq->state != SCHEDULER_STARTED)
         return -1;
 
-    sched->state = SCHEDULER_STOPPED;
+    tmq->state = SCHEDULER_STOPPED;
 
-    if (pthread_cancel (sched->thread))
+    if (pthread_cancel (tmq->thread))
         return -1;
 /*
-    if (pthread_join (sched->thread, NULL))
+    if (pthread_join (tmq->thread, NULL))
         return -1;
 */
 
@@ -85,12 +85,12 @@ sched_stop (struct sched *sched)
 }
 
 /** Schedule Queue Element Create
- * @return pointer to a new sched element
+ * @return pointer to a new tmq element
  */
-struct sched_element *
-sched_element_create (const void *p_key, unsigned int i_key_size)
+struct tmq_element *
+tmq_element_create (const void *p_key, unsigned int i_key_size)
 {
-    struct sched_element *elem;
+    struct tmq_element *elem;
 
     if ((elem = malloc (sizeof (*elem))) == NULL)
         return NULL;
@@ -113,18 +113,18 @@ sched_element_create (const void *p_key, unsigned int i_key_size)
  * @return -1 on failure, 0 on success
  */
 int
-sched_destroy (struct sched *sched)
+tmq_destroy (struct tmq *tmq)
 {
-    if (sched == NULL)
+    if (tmq == NULL)
         return -1;
 
-    if (sched->state == SCHEDULER_STARTED)
+    if (tmq->state == SCHEDULER_STARTED)
         return -1;
 
-    while (sched->size > 0)
-        sched_delete (sched, sched->head);
+    while (tmq->size > 0)
+        tmq_delete (tmq, tmq->head);
 
-    free (sched);
+    free (tmq);
 
     return 0;
 }
@@ -134,27 +134,27 @@ sched_destroy (struct sched *sched)
  * @return -1 on failure, 0 on success
  */
 int
-sched_pop (struct sched *sched, struct sched_element *elem)
+tmq_pop (struct tmq *tmq, struct tmq_element *elem)
 {
-    if (sched == NULL || sched->size == 0 || elem == NULL)
+    if (tmq == NULL || tmq->size == 0 || elem == NULL)
         return -1;
 
 
-    if (elem == sched->head)
+    if (elem == tmq->head)
     {
-        sched->head = elem->next;
+        tmq->head = elem->next;
 
-        if (sched->head == NULL)
-            sched->tail = NULL;
+        if (tmq->head == NULL)
+            tmq->tail = NULL;
         else
-            sched->head->prev = NULL;
+            tmq->head->prev = NULL;
     }
     else
     {
         elem->prev->next = elem->next;
 
         if (elem->next == NULL)
-            sched->tail = elem->prev;
+            tmq->tail = elem->prev;
         else
             elem->next->prev = elem->prev;
     }
@@ -162,7 +162,7 @@ sched_pop (struct sched *sched, struct sched_element *elem)
     elem->prev = NULL;
     elem->next = NULL;
 
-    sched->size--;
+    tmq->size--;
     return 0;
 }
 
@@ -171,12 +171,12 @@ sched_pop (struct sched *sched, struct sched_element *elem)
  * @return -1 on failure, 0 on success
  */
 int
-sched_delete (struct sched *sched, struct sched_element *elem)
+tmq_delete (struct tmq *tmq, struct tmq_element *elem)
 {
-    if (sched == NULL || elem == NULL || elem->key == NULL)
+    if (tmq == NULL || elem == NULL || elem->key == NULL)
         return -1;
 
-    if (sched_pop (sched, elem))
+    if (tmq_pop (tmq, elem))
         return -1;
 
     free (elem->key);
@@ -189,49 +189,49 @@ sched_delete (struct sched *sched, struct sched_element *elem)
  * @return -1 on failure, 0 on success
  */
 int
-sched_insert (struct sched *sched, struct sched_element *elem)
+tmq_insert (struct tmq *tmq, struct tmq_element *elem)
 {
-    if (sched == NULL || elem == NULL)
+    if (tmq == NULL || elem == NULL)
         return -1;
 
-    pthread_mutex_lock (&sched->lock);
+    pthread_mutex_lock (&tmq->lock);
 
-    if (sched->size == 0)
+    if (tmq->size == 0)
     {
-        sched->head = elem;
-        sched->tail = elem;
-        sched->head->prev = NULL;
-        sched->head->next = NULL;
+        tmq->head = elem;
+        tmq->tail = elem;
+        tmq->head->prev = NULL;
+        tmq->head->next = NULL;
     }
     else
     {
         elem->next = NULL;
-        elem->prev = sched->tail;
-        sched->tail->next = elem;
-        sched->tail = elem;
+        elem->prev = tmq->tail;
+        tmq->tail->next = elem;
+        tmq->tail = elem;
     }
 
-    sched->size++;
+    tmq->size++;
     gettimeofday (&elem->time, NULL);
 
-    pthread_mutex_unlock (&sched->lock);
+    pthread_mutex_unlock (&tmq->lock);
 
     return 0;
 }
 
-/** Update the atime on the element and bump it up the sched
+/** Update the atime on the element and bump it up the tmq
  * @return -1 on failure, 0 on success 
  */
 int
-sched_bump (struct sched *sched, struct sched_element *elem)
+tmq_bump (struct tmq *tmq, struct tmq_element *elem)
 {
-    if (sched == NULL || elem == NULL)
+    if (tmq == NULL || elem == NULL)
         return -1;
 
-    if (sched_pop (sched, elem))
+    if (tmq_pop (tmq, elem))
         return -1;
 
-    sched_insert (sched, elem);
+    tmq_insert (tmq, elem);
 
     return 0;
 }
@@ -239,40 +239,40 @@ sched_bump (struct sched *sched, struct sched_element *elem)
 /** Schedule Queue Find
  * @return pointer to matching element
  */
-struct sched_element *
-sched_find (struct sched *sched, const void *p_key)
+struct tmq_element *
+tmq_find (struct tmq *tmq, const void *p_key)
 {
-    struct sched_element *it;
+    struct tmq_element *it;
 
-    for (it = sched->head; it; it = it->next)
-        if (sched->compare (p_key, it->key) == 0)
+    for (it = tmq->head; it; it = it->next)
+        if (tmq->compare (p_key, it->key) == 0)
             return it;
 
     return NULL;
 }
 
-/** Timeout old elements in the sched 
+/** Timeout old elements in the tmq 
  * @return number of elements timed out
  */
 int
-sched_timeout (struct sched *sched)
+tmq_timeout (struct tmq *tmq)
 {
-    struct sched_element *it;
-    struct timeval timeout;
+    struct tmq_element *it;
+    struct timeval delta;
     int removed = 0;
 
-    gettimeofday (&timeout, NULL);
-    timeout.tv_sec -= SCHEDULER_TIMEOUT;
+    gettimeofday (&delta, NULL);
+    delta.tv_sec -= DEFAULT_TIME; 
 
-    for (it = sched->tail; it; it = sched->tail)
+    for (it = tmq->tail; it; it = tmq->tail)
     {
-        if (it->time.tv_sec > timeout.tv_sec)
+        if (it->time.tv_sec > delta.tv_sec)
             break;
 
-        if (sched->task != NULL)
-            sched->task (it->key);
+        if (tmq->task != NULL)
+            tmq->task (it->key);
 
-        sched_delete (sched, it);
+        tmq_delete (tmq, it);
         removed++;
     }
 
@@ -284,20 +284,20 @@ sched_timeout (struct sched *sched)
  * @return void *
  */
 void *
-schedule_runner (void *args)
+tmq_thread (void *args)
 {
-    struct sched *sched = (struct sched *)args;
-    struct timespec timeout;
-    timeout.tv_sec = EXPIRE_INTERVAL;
-    timeout.tv_nsec = 0;
+    struct tmq *tmq = (struct tmq *)args;
+    struct timespec schedule;
+    schedule.tv_sec = SCHEDULE_INTERVAL;
+    schedule.tv_nsec = 0;
 
     pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype (PTHREAD_CANCEL_DEFERRED, NULL);
 
     while (1)
     {
-        nanosleep(&timeout, NULL);
-        sched_timeout (sched);
+        nanosleep(&schedule, NULL);
+        tmq_timeout (tmq);
     }
 
     return (void *)0;

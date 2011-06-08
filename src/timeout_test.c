@@ -33,7 +33,7 @@
  * removed (0) elements
  * removed (1000) elements
  */
-#include "schedule.h"
+#include "timeout_queue.h"
 
 int task (const void *data) 
 {
@@ -55,8 +55,8 @@ int compare (const void *p1, const void *p2)
 
 int main (int argc, char *argv[])
 {
-    struct sched *sched = sched_create ();
-    struct sched_element *elem;
+    struct tmq *tmq = tmq_create ();
+    struct tmq_element *elem;
     int key;
 
     /* for nanosleep */
@@ -65,29 +65,29 @@ int main (int argc, char *argv[])
     time.tv_nsec = 0;
 
     /* Set the function pointers */
-    sched->task = task;
-    sched->compare = compare;
+    tmq->task = task;
+    tmq->compare = compare;
 
     /* Start the expiration thread */
-    sched_start (sched);
+    tmq_start (tmq);
 
     for (key = 0; key < 3000; key++)
     {
         /* Space time insertions out a bit */
-        if ((key % 1000) == 0)
+        if ((key % 100) == 0)
             nanosleep (&time, NULL);
 
-        elem = sched_element_create (&key, sizeof(key));
-        sched_insert (sched, elem);
+        elem = tmq_element_create (&key, sizeof(key));
+        tmq_insert (tmq, elem);
     }
 
-    /* the timeout thread will ensure that we eventually 
-     * remove all the elements from the sched */
-    while (sched->size > 0);
+    /* the tmq thread will ensure that we eventually 
+     * remove all the elements from the tmq */
+    while (tmq->size > 0);
 
     /* kill off the expiration thread */
-    sched_stop (sched);
+    tmq_stop (tmq);
 
-    /* Queue destroy removes all elements from the sched */
-    sched_destroy (sched);
+    /* Queue destroy removes all elements from the tmq */
+    tmq_destroy (tmq);
 }
