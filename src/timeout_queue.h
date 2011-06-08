@@ -23,7 +23,7 @@
 
 /** Default Queue Time value
  */
-#define DEFAULT_TIME 180
+#define DEFAULT_TIME 1
 
 /** Schedule check interval 
  * how often to check for expired elements

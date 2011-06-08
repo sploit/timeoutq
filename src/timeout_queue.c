@@ -24,7 +24,7 @@
 
 #include "timeout_queue.h"
 
-/** Schedule Queue Create
+/** Timeout Queue Create
  * @return pointer to new tmq
  */
 struct tmq *
@@ -63,7 +63,7 @@ tmq_start (struct tmq *tmq)
     return 0;
 }
 
-/** Schedule Queue Stop
+/** Timeout Queue Stop
  * @return 0 on success, -1 on failure
  */
 int
@@ -76,15 +76,11 @@ tmq_stop (struct tmq *tmq)
 
     if (pthread_cancel (tmq->thread))
         return -1;
-/*
-    if (pthread_join (tmq->thread, NULL))
-        return -1;
-*/
 
     return 0;
 }
 
-/** Schedule Queue Element Create
+/** Timeout Queue Element Create
  * @return pointer to a new tmq element
  */
 struct tmq_element *
@@ -109,7 +105,7 @@ tmq_element_create (const void *p_key, unsigned int i_key_size)
     return elem;
 }
 
-/** Schedule Queue Destroy
+/** Timeout Queue Destroy
  * @return -1 on failure, 0 on success
  */
 int
@@ -129,7 +125,7 @@ tmq_destroy (struct tmq *tmq)
     return 0;
 }
 
-/** Schedule Queue Pop
+/** Timeout Queue Pop
  * Remove the element from the list
  * @return -1 on failure, 0 on success
  */
@@ -167,7 +163,7 @@ tmq_pop (struct tmq *tmq, struct tmq_element *elem)
     return 0;
 }
 
-/** Schedule Queue Delete
+/** Timeout Queue Delete
  * Delete an element from the list
  * @return -1 on failure, 0 on success
  */
@@ -186,7 +182,7 @@ tmq_delete (struct tmq *tmq, struct tmq_element *elem)
     return 0;
 }
 
-/** Schedule Queue Element Insert
+/** Timeout Queue Element Insert
  * @return -1 on failure, 0 on success
  */
 int
@@ -237,7 +233,7 @@ tmq_bump (struct tmq *tmq, struct tmq_element *elem)
     return 0;
 }
 
-/** Schedule Queue Find
+/** Timeout Queue Find
  * @return pointer to matching element
  */
 struct tmq_element *
@@ -259,15 +255,15 @@ int
 tmq_timeout (struct tmq *tmq)
 {
     struct tmq_element *it;
-    struct timeval delta;
+    struct timeval timeout;
     int removed = 0;
 
-    gettimeofday (&delta, NULL);
-    delta.tv_sec -= DEFAULT_TIME; 
+    gettimeofday (&timeout, NULL);
+    timeout.tv_sec -= DEFAULT_TIME; 
 
     for (it = tmq->tail; it; it = tmq->tail)
     {
-        if (it->time.tv_sec > delta.tv_sec)
+        if (it->time.tv_sec > timeout.tv_sec)
             break;
 
         if (tmq->task != NULL)
@@ -288,16 +284,16 @@ void *
 tmq_thread (void *args)
 {
     struct tmq *tmq = (struct tmq *)args;
-    struct timespec schedule;
-    schedule.tv_sec = SCHEDULE_INTERVAL;
-    schedule.tv_nsec = 0;
+    struct timespec timeout;
+    timeout.tv_sec = SCHEDULE_INTERVAL;
+    timeout.tv_nsec = 0;
 
     pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype (PTHREAD_CANCEL_DEFERRED, NULL);
 
     while (1)
     {
-        nanosleep(&schedule, NULL);
+        nanosleep(&timeout, NULL);
         tmq_timeout (tmq);
     }
 

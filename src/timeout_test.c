@@ -59,11 +59,6 @@ int main (int argc, char *argv[])
     struct tmq_element *elem;
     int key;
 
-    /* for nanosleep */
-    struct timespec time;
-    time.tv_sec = 3;
-    time.tv_nsec = 0;
-
     /* Set the function pointers */
     tmq->task = task;
     tmq->compare = compare;
@@ -71,11 +66,11 @@ int main (int argc, char *argv[])
     /* Start the expiration thread */
     tmq_start (tmq);
 
-    for (key = 0; key < 3000; key++)
+    for (key = 0; key < 9000; key++)
     {
         /* Space time insertions out a bit */
-        if ((key % 100) == 0)
-            nanosleep (&time, NULL);
+        if ((key % 500) == 0)
+            sleep (1);
 
         elem = tmq_element_create (&key, sizeof(key));
         tmq_insert (tmq, elem);
