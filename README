@@ -8,23 +8,23 @@ hash table.
 
 Call chain:
 
-/* Create a new sched */
-sched_create ();
+/* Create a new tmq */
+tmq_create ();
 
 /* Create a new element */
-sched_element_create ();
+tmq_element_create ();
 
-/* Add new element to the sched */
-sched_insert ();
+/* Add new element to the tmq */
+tmq_insert ();
 
 /* find an element that was already inserted */
-sched_find ();
+tmq_find ();
 
 /* reset the timer for an element */
-sched_bump ();
+tmq_bump ();
 
-/* premptively delete an element from the sched */
-sched_delete ();
+/* premptively delete an element from the tmq */
+tmq_delete ();
 
 /* timeout the expired elements */
-sched_timeout ();
+tmq_timeout ();
