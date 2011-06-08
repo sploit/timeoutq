@@ -1,4 +1,4 @@
-Schedule Queue
+Timeout Queue
 
 Preform a set task against a set of data elements after a given timeout
 has been reached.
