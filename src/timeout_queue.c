@@ -88,6 +88,10 @@ tmq_element_create (const void *p_key, unsigned int i_key_size)
 {
     struct tmq_element *elem;
 
+    if (p_key == NULL || i_key_size == 0)
+        return NULL;
+
+
     if ((elem = malloc (sizeof (*elem))) == NULL)
         return NULL;
 
@@ -121,6 +125,8 @@ tmq_destroy (struct tmq *tmq)
         tmq_delete (tmq, tmq->head);
 
     free (tmq);
+
+    tmq = NULL;
 
     return 0;
 }
