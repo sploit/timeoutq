@@ -14,9 +14,9 @@ END_TEST
 /** Build the TMQ Test Suite
  */
 Suite *
-make_tmq_create_suite (void)
+positive_suite (void)
 {
-    Suite *s = suite_create ("Timeout Queue Create");
+    Suite *s = suite_create ("Timeout Queue - Positive - tmq_create");
     TCase *tc = tcase_create ("Positive");
 
     suite_add_tcase (s, tc);
@@ -34,7 +34,7 @@ main (void)
     Suite *s;
     SRunner *sr;
 
-    s = make_tmq_create_suite ();
+    s = positive_suite ();
     sr = srunner_create (s);
     srunner_run_all (sr, CK_NORMAL);
     n = srunner_ntests_failed (sr);
