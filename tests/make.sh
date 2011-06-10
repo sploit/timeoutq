@@ -12,5 +12,8 @@ gcc -o check_tmq_element_create -pthread -lcheck -I../src ../src/timeout_queue.c
 # tmq_insert tests
 gcc -o check_tmq_insert -pthread -lcheck -I../src ../src/timeout_queue.c check_tmq_insert.c
 
+# tmq_bump tests
+gcc -o check_tmq_bump -pthread -lcheck -I../src ../src/timeout_queue.c check_tmq_bump.c
+
 # tmq_delete tests
 gcc -o check_tmq_delete -pthread -lcheck -I../src ../src/timeout_queue.c check_tmq_delete.c

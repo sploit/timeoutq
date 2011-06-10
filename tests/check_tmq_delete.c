@@ -87,18 +87,28 @@ END_TEST
 /** Build the TMQ Test Suite
  */
 Suite *
-make_tmq_delete_suite (void)
+positive_suite (void)
 {
-    Suite *s = suite_create ("timeout queue delete");
+    Suite *s = suite_create ("Timeout Queue - Positive - tmq_delete");
     TCase *tc = tcase_create ("Core");
+
+    suite_add_tcase (s, tc);
+    tcase_add_test (tc, test_tmq_delete_one);
+    tcase_add_test (tc, test_tmq_delete_a_bunch);
+
+    return s;
+}
+
+Suite *
+negative_suite (void)
+{
+    Suite *s = suite_create ("Timeout Queue - Negative - tmq_delete");
+    TCase *tc = tcase_create ("Negative");
 
     suite_add_tcase (s, tc);
     tcase_add_test (tc, test_tmq_delete_null_elem);
     tcase_add_test (tc, test_tmq_delete_tmq_null);
     tcase_add_test (tc, test_tmq_delete_null_null);
-
-    tcase_add_test (tc, test_tmq_delete_one);
-    tcase_add_test (tc, test_tmq_delete_a_bunch);
 
     return s;
 }
@@ -112,7 +122,13 @@ main (void)
     Suite *s;
     SRunner *sr;
 
-    s = make_tmq_delete_suite ();
+    s = positive_suite ();
+    sr = srunner_create (s);
+    srunner_run_all (sr, CK_NORMAL);
+    n = srunner_ntests_failed (sr);
+    srunner_free (sr);
+
+    s = negative_suite ();
     sr = srunner_create (s);
     srunner_run_all (sr, CK_NORMAL);
     n = srunner_ntests_failed (sr);

@@ -38,18 +38,51 @@ START_TEST(test_tmq_element_create_null_zero)
 }
 END_TEST
 
-/** Build the TMQ Test Suite
+/** Positive test 
+ */
+START_TEST(test_tmq_element_create)
+{
+    struct tmq_element *ret;
+    struct key
+    { 
+        int host;
+        int id;
+    } key;
+
+    key.host = 0x0A040A20;
+    key.id = 1;
+
+    ret = tmq_element_create (&key, sizeof (key));
+    fail_unless ((ret != NULL), "tmq_element_create (&key, sizeof (key))");
+}
+END_TEST
+
+/** Negative Tests 
  */
 Suite *
-make_tmq_insert_suite (void)
+negative_suite (void)
 {
-    Suite *s = suite_create ("timeout queue element create");
-    TCase *tc = tcase_create ("Core");
+    Suite *s = suite_create ("Timeout Queue - Negative - tmq_element_create");
+    TCase *tc = tcase_create ("Negative");
 
     suite_add_tcase (s, tc);
     tcase_add_test (tc, test_tmq_element_create_null_size);
     tcase_add_test (tc, test_tmq_element_create_key_zero);
     tcase_add_test (tc, test_tmq_element_create_null_zero);
+
+    return s;
+}
+
+/** Positive Tests 
+ */
+Suite *
+positive_suite (void)
+{
+    Suite *s = suite_create ("Timeout Queue - Positive - tmq_element_create");
+    TCase *tc = tcase_create ("Positive");
+
+    suite_add_tcase (s, tc);
+    tcase_add_test (tc, test_tmq_element_create);
 
     return s;
 }
@@ -63,7 +96,13 @@ main (void)
     Suite *s;
     SRunner *sr;
 
-    s = make_tmq_insert_suite ();
+    s = positive_suite ();
+    sr = srunner_create (s);
+    srunner_run_all (sr, CK_NORMAL);
+    n = srunner_ntests_failed (sr);
+    srunner_free (sr);
+
+    s = negative_suite ();
     sr = srunner_create (s);
     srunner_run_all (sr, CK_NORMAL);
     n = srunner_ntests_failed (sr);
