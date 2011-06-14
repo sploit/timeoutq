@@ -52,6 +52,9 @@ tmq_create ()
 int
 tmq_start (struct tmq *tmq)
 {
+    if (tmq == NULL)
+        return -1;
+
     if (tmq->state != SCHEDULER_STOPPED)
         return -1;
 
@@ -69,6 +72,9 @@ tmq_start (struct tmq *tmq)
 int
 tmq_stop (struct tmq *tmq)
 {
+    if (tmq == NULL)
+        return -1;
+
     if (tmq->state != SCHEDULER_STARTED)
         return -1;
 
@@ -138,9 +144,10 @@ tmq_destroy (struct tmq *tmq)
 int
 tmq_pop (struct tmq *tmq, struct tmq_element *elem)
 {
-    pthread_mutex_lock (&tmq->lock);
     if (tmq == NULL || tmq->size == 0 || elem == NULL)
         return -1;
+
+    pthread_mutex_lock (&tmq->lock);
 
     if (elem == tmq->head)
     {
@@ -266,6 +273,9 @@ tmq_timeout (struct tmq *tmq)
     struct tmq_element *it;
     struct timeval timeout;
     int removed = 0;
+
+    if (tmq == NULL)
+        return -1;
 
     gettimeofday (&timeout, NULL);
     timeout.tv_sec -= DEFAULT_TIME; 
