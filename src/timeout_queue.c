@@ -247,6 +247,9 @@ tmq_find (struct tmq *tmq, const void *p_key)
 {
     struct tmq_element *it;
 
+    if (tmq == NULL || p_key == NULL)
+        return NULL;
+
     for (it = tmq->head; it; it = it->next)
         if (tmq->compare (p_key, it->key) == 0)
             return it;
