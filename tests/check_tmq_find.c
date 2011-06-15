@@ -13,8 +13,8 @@ int compare (const void *p1, const void *p2)
         *val2 = (int *)p2;
 
     if (*val1 == *val2)
-        return 1;
-    return 0;
+        return 0;
+    return -1;
 }
 
 /** NULL struct tmq *

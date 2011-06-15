@@ -258,7 +258,7 @@ tmq_find (struct tmq *tmq, const void *p_key)
         return NULL;
 
     for (it = tmq->head; it; it = it->next)
-        if (tmq->compare (p_key, it->key))
+        if (tmq->compare (p_key, it->key) == 0)
             return it;
 
     return NULL;
@@ -292,7 +292,6 @@ tmq_timeout (struct tmq *tmq)
         removed++;
     }
 
-    printf ("Removed (%d) elements\n", removed);
     return removed;
 }
 
