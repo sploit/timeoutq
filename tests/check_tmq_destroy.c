@@ -22,6 +22,18 @@ START_TEST (test_negative_tmq_destroy)
 }
 END_TEST
 
+/** Negative Test Cases for TMQ Destroy
+ */
+START_TEST (test_negative_tmq_destroy_thread_active)
+{
+
+    struct tmq *tmq = tmq_create ();
+    tmq->state = SCHEDULER_STARTED;
+    int ret = tmq_destroy (tmq);
+    fail_unless ((ret < 0), "tmq_destroy () killed queue with thread still active");
+}
+END_TEST
+
 /** Build the TMQ Test Suite
  */
 Suite *
@@ -44,6 +56,7 @@ negative_suite (void)
 
     suite_add_tcase (s, tc);
     tcase_add_test (tc, test_negative_tmq_destroy);
+    tcase_add_test (tc, test_negative_tmq_destroy_thread_active);
 
     return s;
 }
