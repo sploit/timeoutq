@@ -2,7 +2,7 @@
 
 #include <check.h>
 
-/** Test Cases for TMQ Insert
+/** Test Cases for TMQ Find
  */
 
 /** XXX Necessary function definition
@@ -68,6 +68,7 @@ START_TEST(test_tmq_find_one)
     tmq->compare = compare;
 
     elem = tmq_element_create (&key, sizeof(key));
+
     tmq_insert (tmq, elem);
 
     elem = tmq_find (tmq, &key);
