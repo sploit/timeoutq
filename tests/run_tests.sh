@@ -10,4 +10,6 @@ check_tmq_find
 check_tmq_pop
 check_tmq_bump
 check_tmq_delete
+check_tmq_start
+check_tmq_stop
 check_tmq_timeout

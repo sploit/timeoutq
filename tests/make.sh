@@ -26,3 +26,9 @@ gcc -o check_tmq_delete -pthread -lcheck -I../src ../src/timeout_queue.c check_t
 
 # tmq_timeout tests
 gcc -o check_tmq_timeout -pthread -lcheck -I../src ../src/timeout_queue.c check_tmq_timeout.c
+
+# tmq_start tests
+gcc -o check_tmq_start -pthread -lcheck -I../src ../src/timeout_queue.c check_tmq_start.c
+
+# tmq_stop tests
+gcc -o check_tmq_stop -pthread -lcheck -I../src ../src/timeout_queue.c check_tmq_stop.c
