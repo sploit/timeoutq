@@ -28,7 +28,7 @@ START_TEST (test_negative_tmq_destroy_thread_active)
 {
 
     struct tmq *tmq = tmq_create ();
-    tmq->state = SCHEDULER_STARTED;
+    tmq->state = QUEUE_STARTED;
     int ret = tmq_destroy (tmq);
     fail_unless ((ret < 0), "tmq_destroy () killed queue with thread still active");
 }

@@ -1,11 +1,16 @@
-#include <timeout_queue.h>
 #include <unistd.h>
 #include <check.h>
-
-#define DEFAULT_TIME 1
+#include <timeout_queue.h>
 
 /** Test Cases for TMQ Timeout
  */
+
+void tmq_age (struct tmq *tmq)
+{
+    struct tmq_element *it;
+    for (it = tmq->head; it; it = it->next)
+        it->time.tv_sec -= DEFAULT_TIMEOUT;
+}
 
 /** NULL struct tmq *
  */
@@ -27,7 +32,7 @@ START_TEST(test_tmq_timeout_one)
     elem = tmq_element_create (&key, sizeof(key));
     tmq_insert (tmq, elem);
 
-    sleep (2);
+    tmq_age (tmq);
 
     tmq_timeout (tmq);
 
@@ -51,7 +56,7 @@ START_TEST(test_tmq_timeout_a_bunch)
         tmq_insert (tmq, elem);
     }
 
-    sleep (2);
+    tmq_age (tmq);
 
     tmq_timeout (tmq);
 
@@ -72,6 +77,7 @@ positive_suite (void)
     suite_add_tcase (s, tc);
     tcase_add_test (tc, test_tmq_timeout_one);
     tcase_add_test (tc, test_tmq_timeout_a_bunch);
+    tcase_set_timeout(tc, 15);
 
     return s;
 }
