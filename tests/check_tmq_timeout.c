@@ -77,7 +77,6 @@ positive_suite (void)
     suite_add_tcase (s, tc);
     tcase_add_test (tc, test_tmq_timeout_one);
     tcase_add_test (tc, test_tmq_timeout_a_bunch);
-    tcase_set_timeout(tc, 15);
 
     return s;
 }
