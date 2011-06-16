@@ -1,5 +1,7 @@
 #!/bin/bash
 
+PATH=$PATH:.
+
 # tmq_create
 gcc -o check_tmq_create -pthread -lcheck -ldl -I../src ../src/timeout_queue.c check_tmq_create.c
 
@@ -32,3 +34,9 @@ gcc -o check_tmq_start -pthread -lcheck -I../src ../src/timeout_queue.c check_tm
 
 # tmq_stop tests
 gcc -o check_tmq_stop -pthread -lcheck -I../src ../src/timeout_queue.c check_tmq_stop.c
+
+# Test for the multithreaded portion
+gcc -o timeout_test -pthread -I../src ../src/timeout_queue.c timeout_test.c
+
+# Run the tests
+make-check.sh
