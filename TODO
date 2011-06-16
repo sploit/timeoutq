@@ -1,8 +1,0 @@
-src/
-    1. finalize a naming convention that I'll be satisfied with
-
-tests/
-    1. add check_<func_name>.c file for each function.
-    2. add hooking to malloc so I can preform controlled 
-        failures for certain tests.
-    3. add synchronization tests for the timeout thread
