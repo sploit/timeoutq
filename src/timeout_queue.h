@@ -15,28 +15,36 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *****************************************************************************/
-#ifndef __TIMEOUT_SCHEDULER_H__
-#define __TIMEOUT_SCHEDULER_H__
+#ifndef __TIMEOUT_QUEUE_H__
+#define __TIMEOUT_QUEUE_H__
 
 #include <sys/time.h>
 #include <pthread.h>
 
-/** Default Queue Time value
+/** Default Queue Time value (in seconds)
  */
-#define DEFAULT_TIME 1
+#define DEFAULT_TIMEOUT 60
+
+#ifndef TIMEOUT
+#   define TIMEOUT DEFAULT_TIMEOUT
+#endif
 
 /** Schedule check interval 
  * how often to check for expired elements
  */
-#define SCHEDULE_INTERVAL 1
+#define DEFAULT_TIMEOUT_INTERVAL 1
+
+#ifndef TIMEOUT_INTERVAL
+#   define TIMEOUT_INTERVAL DEFAULT_TIMEOUT_INTERVAL
+#endif
 
 /** State of the tmq
  */
 typedef enum
 {
-    SCHEDULER_STOPPED,
-    SCHEDULER_STARTED
-} SCHEDULER_STATE;
+    QUEUE_STOPPED,
+    QUEUE_STARTED
+} QUEUE_STATE;
 
 /** Schedule Queue Element
  */
@@ -59,7 +67,7 @@ struct tmq
 
     pthread_t thread;
     pthread_mutex_t lock;
-    SCHEDULER_STATE state;
+    QUEUE_STATE state;
 
     int (*compare) (const void *p1, const void *p2);
     int (*task) (const void *p);
@@ -115,4 +123,4 @@ extern struct tmq_element *tmq_find (struct tmq *tmq,
  */
 extern int tmq_timeout (struct tmq *tmq);
 
-#endif /* __TIMEOUT_SCHEDULER_H__ */
+#endif /* __TIMEOUT_QUEUE_H__ */

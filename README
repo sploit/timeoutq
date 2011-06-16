@@ -1,4 +1,6 @@
+============================================================
 Timeout Queue
+============================================================
 
 Preform a set task against a set of data elements after a given timeout
 has been reached.
@@ -6,25 +8,55 @@ has been reached.
 My use case is for preforming garbage collection of stale elements from
 hash table.
 
+============================================================
 Call chain:
+============================================================
 
-/* Create a new tmq */
-tmq_create ();
+tmq_create
+- Create a new timeout queue
 
-/* Create a new element */
-tmq_element_create ();
+tmq_start
+- Start the timeout/expiration thread
 
-/* Add new element to the tmq */
-tmq_insert ();
+tmq_element_create
+- Create new elements
 
-/* find an element that was already inserted */
-tmq_find ();
+tmq_insert
+- Add elements into the queue
+- Assign timestamp to the elements 
 
-/* reset the timer for an element */
-tmq_bump ();
+tmq_find
+- Find and return existing elements in the queue
 
-/* premptively delete an element from the tmq */
-tmq_delete ();
+tmq_bump
+- Pop an element out of the queue
+- Reinsert element into the queue (effectively resetting its timer)
 
-/* timeout the expired elements */
-tmq_timeout ();
+tmq_delete
+- Pop an element out of the queue
+- Free memory assigned for the key
+
+tmq_timeout
+- Find expired elements in the queue
+- Run those elements against the assigned queue task
+- tmq_delete the elements from the queue
+
+tmq_stop
+- kill off the expiration thread
+
+tmq_destroy
+- tmq_delete all queue elements
+- free the queue
+
+============================================================
+Notes
+============================================================
+Threaded timer vs. random check
+
+If you do not want to import the threaded portions of the timeout queue
+then you can just make calls to tmq_timeout yourself.
+
+If you do want threading then do not call tmq_timeout ever. Instead you
+need to call tmq_start (to start the thread) and tmq_stop (to stop the
+thread), the thread will call tmq_timeout will intermitently 
+(redefine TIMEOUT_INTERVAL for thread).

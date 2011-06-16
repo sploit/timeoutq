@@ -41,7 +41,7 @@ tmq_create ()
 
     pthread_mutex_init (&tmq->lock, NULL);
 
-    tmq->state = SCHEDULER_STOPPED;
+    tmq->state = QUEUE_STOPPED;
 
     return tmq;
 }
@@ -55,13 +55,13 @@ tmq_start (struct tmq *tmq)
     if (tmq == NULL)
         return -1;
 
-    if (tmq->state != SCHEDULER_STOPPED)
+    if (tmq->state != QUEUE_STOPPED)
         return -1;
 
     if (pthread_create (&tmq->thread, NULL, tmq_thread, (void *)tmq))
         return -1;
 
-    tmq->state = SCHEDULER_STARTED;
+    tmq->state = QUEUE_STARTED;
 
     return 0;
 }
@@ -75,10 +75,10 @@ tmq_stop (struct tmq *tmq)
     if (tmq == NULL)
         return -1;
 
-    if (tmq->state != SCHEDULER_STARTED)
+    if (tmq->state != QUEUE_STARTED)
         return -1;
 
-    tmq->state = SCHEDULER_STOPPED;
+    tmq->state = QUEUE_STOPPED;
 
     if (pthread_cancel (tmq->thread))
         return -1;
@@ -124,7 +124,7 @@ tmq_destroy (struct tmq *tmq)
     if (tmq == NULL)
         return -1;
 
-    if (tmq->state == SCHEDULER_STARTED)
+    if (tmq->state == QUEUE_STARTED)
         return -1;
 
     while (tmq->size > 0)
@@ -278,7 +278,7 @@ tmq_timeout (struct tmq *tmq)
         return -1;
 
     gettimeofday (&timeout, NULL);
-    timeout.tv_sec -= DEFAULT_TIME; 
+    timeout.tv_sec -= TIMEOUT;
 
     for (it = tmq->tail; it; it = tmq->tail)
     {
@@ -303,7 +303,7 @@ tmq_thread (void *args)
 {
     struct tmq *tmq = (struct tmq *)args;
     struct timespec timeout;
-    timeout.tv_sec = SCHEDULE_INTERVAL;
+    timeout.tv_sec = TIMEOUT_INTERVAL;
     timeout.tv_nsec = 0;
 
     pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
