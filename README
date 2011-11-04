@@ -58,5 +58,5 @@ then you can just make calls to tmq_timeout yourself.
 
 If you do want threading then do not call tmq_timeout ever. Instead you
 need to call tmq_start (to start the thread) and tmq_stop (to stop the
-thread), the thread will call tmq_timeout will intermitently 
+thread), the thread will call tmq_timeout intermitently.
 (redefine TIMEOUT_INTERVAL for thread).
